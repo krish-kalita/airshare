@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AirShare — Transfer files over WiFi</title>
+<meta name="description" content="Send files directly between devices over WiFi. No upload, no account, no size limit. Peer-to-peer transfer in your browser.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="bg-grid" aria-hidden="true"></div>
+
+<div class="app">
+
+  <!-- ============ HEADER ============ -->
+  <header class="site-header">
+    <div class="brand">
+      <svg class="brand-mark" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M14 1.5L25.5 8.25V19.75L14 26.5L2.5 19.75V8.25L14 1.5Z" stroke="url(#brandGrad)" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M14 7L20 10.5V17.5L14 21L8 17.5V10.5L14 7Z" stroke="url(#brandGrad)" stroke-width="1.4" stroke-linejoin="round" opacity="0.55"/>
+        <defs>
+          <linearGradient id="brandGrad" x1="2.5" y1="1.5" x2="25.5" y2="26.5" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#5b8cff"/>
+            <stop offset="1" stop-color="#3b6eff"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="brand-name">AirShare</span>
+    </div>
+    <div class="header-status" id="connectionBadge" data-state="idle">
+      <span class="status-dot"></span>
+      <span class="status-text">Not connected</span>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- ============ HERO ============ -->
+    <section class="hero">
+      <h1 class="hero-title">Built for the Journey</h1>
+      <p class="hero-sub">Transfer videos, music, apps, documents, photos, and entire folders directly between devices on your network. No uploads, no cloud storage, and no artificial limits standing between you and your files.</p>
+    </section>
+
+    <!-- ============ STAGE: idle / role select ============ -->
+    <section class="stage" id="stage-idle" data-stage>
+      <div class="panel panel-primary">
+        <h2 class="panel-title">Start a transfer</h2>
+        <p class="panel-desc">Create a room on this device, then enter the code on the other one.</p>
+        <button class="btn btn-primary btn-lg" id="btnCreateRoom">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 3.5V14.5M3.5 9H14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Create share room
+        </button>
+
+        <div class="divider"><span>or join existing</span></div>
+
+        <form class="join-row" id="joinForm">
+          <input
+            type="text"
+            id="joinCode"
+            class="code-input"
+            placeholder="Enter 6-digit code"
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="6"
+            aria-label="6-digit room code">
+          <button type="submit" class="btn btn-secondary" id="btnJoin">Join</button>
+        </form>
+        <p class="error-text" id="joinError" hidden></p>
+      </div>
+
+      <div class="panel panel-ghost">
+        <h3 class="panel-subtitle">Install on this device</h3>
+        <p class="panel-desc-sm">Works straight from the browser — no install needed. Add it to your home screen for one-tap access next time.</p>
+        <button class="btn btn-tertiary" id="btnInstallHint">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5V10.5M4 7L8 11L12 7M3 14.5H13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          How to add to home screen
+        </button>
+      </div>
+    </section>
+
+    <!-- ============ STAGE: waiting (room created, showing code) ============ -->
+    <section class="stage stage-center" id="stage-waiting" data-stage hidden>
+      <div class="panel panel-primary panel-pulse">
+        <div class="pulse-stage" id="pulseStage" aria-hidden="true">
+          <div class="pulse-ring r1"></div>
+          <div class="pulse-ring r2"></div>
+          <div class="pulse-ring r3"></div>
+          <div class="pulse-core"></div>
+        </div>
+        <p class="waiting-label">Share this code with the other device</p>
+        <div class="room-code" id="roomCodeDisplay">— — — — — —</div>
+        <button class="btn btn-tertiary btn-copy" id="btnCopyCode">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="5" y="5" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M9 5V3.5C9 2.67 8.33 2 7.5 2H3.5C2.67 2 2 2.67 2 3.5V7.5C2 8.33 2.67 9 3.5 9H5" stroke="currentColor" stroke-width="1.3"/></svg>
+          Copy code
+        </button>
+        <p class="waiting-status" id="waitingStatus">Listening for connection…</p>
+        <button class="btn btn-ghost-sm" id="btnCancelWait">Cancel</button>
+      </div>
+    </section>
+
+    <!-- ============ STAGE: connected (transfer hub) ============ -->
+    <section class="stage stage-center" id="stage-connected" data-stage hidden>
+      <div class="panel panel-primary">
+        <div class="link-status">
+          <span class="link-dot"></span>
+          <span>Connected to peer</span>
+          <span class="link-id" id="peerIdShort"></span>
+        </div>
+
+        <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose or drop files to send">
+          <svg class="dz-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <path d="M20 6V26M12 18L20 26L28 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7 30V32C7 33.66 8.34 35 10 35H30C31.66 35 33 33.66 33 32V30" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+          <p class="dz-text"><strong>Drop files</strong> or tap to browse</p>
+          <p class="dz-sub">Any file type · any size</p>
+          <input type="file" id="fileInput" multiple hidden>
+        </div>
+
+        <div class="transfer-list" id="transferList" aria-live="polite"></div>
+
+        <button class="btn btn-ghost-sm" id="btnDisconnect">End session</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>Peer-to-peer in your browser. Files never touch a server.</p>
+  </footer>
+
+</div>
+
+<!-- toast for received files -->
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
