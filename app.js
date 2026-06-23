@@ -45,6 +45,11 @@
   const transferList = $('transferList');
   const toastStack = $('toastStack');
   const joinError = $('joinError');
+  const qrCanvasHost = $('qrCanvasHost');
+  const btnScanQr = $('btnScanQr');
+  const qrScanModal = $('qrScanModal');
+  const qrReaderEl = $('qrReader');
+  const btnCloseScan = $('btnCloseScan');
 
   function showStage(name) {
     Object.entries(stages).forEach(([key, el]) => {
@@ -69,6 +74,70 @@
     return String(Math.floor(100000 + Math.random() * 900000));
   }
 
+  // ==========================================================================
+  // QR code: generate (host side) + scan (joiner side)
+  // ==========================================================================
+
+  function renderRoomQr(code) {
+    qrCanvasHost.innerHTML = '';
+    if (typeof QRCode === 'undefined') {
+      // library failed to load (e.g. CDN blocked) — degrade gracefully,
+      // the 6-digit code still works on its own.
+      qrCanvasHost.hidden = true;
+      return;
+    }
+    qrCanvasHost.hidden = false;
+    new QRCode(qrCanvasHost, {
+      text: code,
+      width: 152,
+      height: 152,
+      colorDark: '#0a0e17',
+      colorLight: '#e8ecf4',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+  }
+
+  let html5QrScanner = null;
+
+  function openScanner() {
+    if (typeof Html5Qrcode === 'undefined') {
+      toast('Scanner library failed to load — enter the code manually instead.', true);
+      return;
+    }
+    qrScanModal.hidden = false;
+    html5QrScanner = new Html5Qrcode('qrReader');
+    html5QrScanner
+      .start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: 220 },
+        (decodedText) => {
+          const digits = (decodedText.match(/\d/g) || []).join('').slice(0, 6);
+          if (digits.length === 6) {
+            closeScanner();
+            $('joinCode').value = digits;
+            $('btnJoin').classList.add('is-valid');
+            joinRoom(digits);
+          }
+        },
+        () => { /* per-frame scan miss — expected constantly while aiming, ignore */ }
+      )
+      .catch((err) => {
+        console.error('Camera start failed:', err);
+        toast('Could not access camera — check permissions, or enter the code manually.', true);
+        closeScanner();
+      });
+  }
+
+  function closeScanner() {
+    qrScanModal.hidden = true;
+    if (html5QrScanner) {
+      html5QrScanner.stop().catch(() => {}).finally(() => {
+        html5QrScanner.clear();
+        html5QrScanner = null;
+      });
+    }
+  }
+
   function formatBytes(bytes) {
     if (bytes === 0) return '0 B';
     const units = ['B', 'KB', 'MB', 'GB'];
@@ -82,22 +151,43 @@
 
   function createRoom() {
     const code = genCode();
+    isHost = true;
     setBadge('waiting', 'Waiting…');
     showStage('waiting');
-    roomCodeDisplay.textContent = code.split('').join(' ');
-    waitingStatus.textContent = 'Listening for connection…';
+    waitingStatus.textContent = 'Starting room…';
+    waitingStatus.classList.remove('found');
     pulseStage.classList.remove('found');
+    roomCodeDisplay.textContent = code.split('').join(' '); // set immediately, before Peer() can throw
+    renderRoomQr(code);
 
-    peer = new Peer(ROOM_PREFIX + code, { debug: 0 });
-    isHost = true;
+    try {
+      peer = new Peer(ROOM_PREFIX + code, { debug: 0 });
+    } catch (e) {
+      console.error('Failed to create Peer:', e);
+      toast('Could not start a room — try reloading the page.', true);
+      return;
+    }
 
     peer.on('open', () => {
-      // ready and listening
+      waitingStatus.textContent = 'Listening for connection…';
     });
 
     peer.on('connection', (incomingConn) => {
       conn = incomingConn;
       wireConnection();
+    });
+
+    // The signaling socket to the broker can drop on its own — mobile devices
+    // sleeping the tab, brief broker hiccups, etc. Without handling this, the
+    // room looks alive ("Listening…") forever while actually being dead.
+    peer.on('disconnected', () => {
+      waitingStatus.textContent = 'Connection lost — reconnecting…';
+      waitingStatus.classList.remove('found');
+      // peer.reconnect() re-establishes the signaling socket using the same ID,
+      // so the room code stays valid for anyone trying to join.
+      if (peer && !peer.destroyed) {
+        try { peer.reconnect(); } catch (e) { /* will retry via error handler below */ }
+      }
     });
 
     peer.on('error', (err) => {
@@ -106,6 +196,9 @@
         // extremely rare collision — just retry with a new code
         peer.destroy();
         createRoom();
+      } else if (err.type === 'network' || err.type === 'server-error') {
+        waitingStatus.textContent = 'Network issue — retrying…';
+        setTimeout(() => { if (peer && !peer.destroyed) peer.reconnect(); }, 1500);
       } else {
         toast('Connection error: ' + err.type, true);
       }
@@ -114,22 +207,40 @@
 
   function joinRoom(code) {
     joinError.hidden = true;
-    peer = new Peer({ debug: 0 });
+
+    try {
+      peer = new Peer({ debug: 0 });
+    } catch (e) {
+      console.error('Failed to create Peer:', e);
+      joinError.textContent = 'Could not start — try reloading the page.';
+      joinError.hidden = false;
+      return;
+    }
     isHost = false;
 
     peer.on('open', () => {
       conn = peer.connect(ROOM_PREFIX + code, { reliable: true });
       conn.on('open', () => wireConnection());
       conn.on('error', (e) => {
+        console.error('Connection error:', e);
         joinError.textContent = 'Could not connect — check the code and try again.';
         joinError.hidden = false;
       });
+    });
+
+    peer.on('disconnected', () => {
+      if (peer && !peer.destroyed) {
+        try { peer.reconnect(); } catch (e) { /* will retry via error handler below */ }
+      }
     });
 
     peer.on('error', (err) => {
       console.error('Peer error:', err);
       if (err.type === 'peer-unavailable') {
         joinError.textContent = 'No active room with that code. Double-check and try again.';
+        joinError.hidden = false;
+      } else if (err.type === 'network' || err.type === 'server-error') {
+        joinError.textContent = 'Network issue reaching the signaling service — please try again.';
         joinError.hidden = false;
       } else {
         joinError.textContent = 'Connection error — please try again.';
@@ -173,6 +284,7 @@
   }
 
   function resetToIdle() {
+    closeScanner();
     setBadge('idle', 'Not connected');
     showStage('idle');
     transferList.innerHTML = '';
@@ -370,18 +482,17 @@
 
   $('joinCode').addEventListener('input', (e) => {
     e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    $('btnJoin').classList.toggle('is-valid', e.target.value.length === 6);
   });
 
+  btnScanQr.addEventListener('click', openScanner);
+  btnCloseScan.addEventListener('click', closeScanner);
   $('btnCancelWait').addEventListener('click', resetToIdle);
   $('btnDisconnect').addEventListener('click', resetToIdle);
 
   $('btnCopyCode').addEventListener('click', () => {
     const code = roomCodeDisplay.textContent.replace(/\s/g, '');
     navigator.clipboard?.writeText(code).then(() => toast('Code copied'));
-  });
-
-  $('btnInstallHint').addEventListener('click', () => {
-    toast('On mobile: open your browser menu → "Add to Home Screen". On desktop Chrome: click the install icon in the address bar.');
   });
 
   dropzone.addEventListener('click', () => fileInput.click());

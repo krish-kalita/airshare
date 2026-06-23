@@ -44,8 +44,8 @@
 
     <!-- ============ HERO ============ -->
     <section class="hero">
-      <h1 class="hero-title">Built for the Journey</h1>
-      <p class="hero-sub">Transfer videos, music, apps, documents, photos, and entire folders directly between devices on your network. No uploads, no cloud storage, and no artificial limits standing between you and your files.</p>
+      <h1 class="hero-title">Send files. Skip the upload.</h1>
+      <p class="hero-sub">Direct device-to-device transfer over your network. MP3, MP4, APK, images, documents — any file, any size, never stored on a server.</p>
     </section>
 
     <!-- ============ STAGE: idle / role select ============ -->
@@ -73,14 +73,10 @@
           <button type="submit" class="btn btn-secondary" id="btnJoin">Join</button>
         </form>
         <p class="error-text" id="joinError" hidden></p>
-      </div>
 
-      <div class="panel panel-ghost">
-        <h3 class="panel-subtitle">Install on this device</h3>
-        <p class="panel-desc-sm">Works straight from the browser — no install needed. Add it to your home screen for one-tap access next time.</p>
-        <button class="btn btn-tertiary" id="btnInstallHint">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5V10.5M4 7L8 11L12 7M3 14.5H13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          How to add to home screen
+        <button class="btn btn-tertiary btn-scan" id="btnScanQr">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.4"/><rect x="9.5" y="1.5" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.4"/><rect x="1.5" y="9.5" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.4"/><path d="M9.5 9.5H11M9.5 12.5H9.5M12.5 9.5H14.5M9.5 14.5H11.5M14.5 12.5V14.5H12.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Scan QR code instead
         </button>
       </div>
     </section>
@@ -96,6 +92,7 @@
         </div>
         <p class="waiting-label">Share this code with the other device</p>
         <div class="room-code" id="roomCodeDisplay">— — — — — —</div>
+        <div class="qr-host" id="qrCanvasHost" hidden></div>
         <button class="btn btn-tertiary btn-copy" id="btnCopyCode">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="5" y="5" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M9 5V3.5C9 2.67 8.33 2 7.5 2H3.5C2.67 2 2 2.67 2 3.5V7.5C2 8.33 2.67 9 3.5 9H5" stroke="currentColor" stroke-width="1.3"/></svg>
           Copy code
@@ -138,9 +135,24 @@
 
 </div>
 
+<!-- QR scan modal -->
+<div class="qr-modal" id="qrScanModal" hidden role="dialog" aria-modal="true" aria-label="Scan room QR code">
+  <div class="qr-modal-inner">
+    <div class="qr-modal-head">
+      <span>Point camera at the host's QR code</span>
+      <button class="qr-modal-close" id="btnCloseScan" aria-label="Close scanner">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 4L14 14M14 4L4 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div id="qrReader"></div>
+  </div>
+</div>
+
 <!-- toast for received files -->
 <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="app.js"></script>
 </body>

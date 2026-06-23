@@ -279,6 +279,12 @@ html, body {
   padding: 13px 22px;
 }
 .btn-secondary:hover { background: rgba(59, 110, 255, 0.22); box-shadow: var(--glow-primary); }
+.btn-secondary.is-valid {
+  background: linear-gradient(135deg, var(--primary-soft), var(--primary));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--glow-primary);
+}
 
 .btn-tertiary {
   background: transparent;
@@ -346,6 +352,22 @@ html, body {
   color: var(--error);
   font-size: 14px;
   margin: 10px 0 0;
+}
+
+.btn-scan {
+  margin-top: 14px;
+}
+
+.qr-host {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  margin: 6px 0 18px;
+  background: var(--text);
+  border-radius: var(--radius-md);
+}
+.qr-host img, .qr-host canvas {
+  display: block;
 }
 
 /* ============================================================
@@ -605,6 +627,53 @@ html, body {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-faint);
+}
+
+/* ============================================================
+   QR scan modal
+   ============================================================ */
+.qr-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(5, 7, 12, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.qr-modal-inner {
+  width: 100%;
+  max-width: 420px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-top: 2px solid var(--primary);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+}
+.qr-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+.qr-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+}
+.qr-modal-close:hover { color: var(--text); }
+#qrReader {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+#qrReader video {
+  border-radius: var(--radius-md);
 }
 
 /* ============================================================
