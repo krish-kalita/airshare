@@ -78,6 +78,18 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.4"/><rect x="9.5" y="1.5" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.4"/><rect x="1.5" y="9.5" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.4"/><path d="M9.5 9.5H11M9.5 12.5H9.5M12.5 9.5H14.5M9.5 14.5H11.5M14.5 12.5V14.5H12.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           Scan QR code instead
         </button>
+
+        <div class="qr-modal" id="qrScanModal" hidden role="region" aria-label="Scan room QR code">
+          <div class="qr-modal-inner">
+            <div class="qr-modal-head">
+              <span>Point camera at the host's QR code</span>
+              <button class="qr-modal-close" id="btnCloseScan" aria-label="Close scanner">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 4L14 14M14 4L4 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <div id="qrReader"></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -133,19 +145,6 @@
     <p>Peer-to-peer in your browser. Files never touch a server.</p>
   </footer>
 
-</div>
-
-<!-- QR scan modal -->
-<div class="qr-modal" id="qrScanModal" hidden role="dialog" aria-modal="true" aria-label="Scan room QR code">
-  <div class="qr-modal-inner">
-    <div class="qr-modal-head">
-      <span>Point camera at the host's QR code</span>
-      <button class="qr-modal-close" id="btnCloseScan" aria-label="Close scanner">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 4L14 14M14 4L4 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      </button>
-    </div>
-    <div id="qrReader"></div>
-  </div>
 </div>
 
 <!-- toast for received files -->

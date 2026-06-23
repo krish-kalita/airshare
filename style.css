@@ -366,6 +366,9 @@ html, body {
   background: var(--text);
   border-radius: var(--radius-md);
 }
+.qr-host[hidden] {
+  display: none;
+}
 .qr-host img, .qr-host canvas {
   display: block;
 }
@@ -633,18 +636,16 @@ html, body {
    QR scan modal
    ============================================================ */
 .qr-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  background: rgba(5, 7, 12, 0.92);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  width: 100%;
+  margin-top: 16px;
+}
+.qr-modal[hidden] {
+  display: none;
 }
 .qr-modal-inner {
   width: 100%;
   max-width: 420px;
+  margin: 0 auto;
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-top: 2px solid var(--primary);
