@@ -106,21 +106,28 @@
     }
     qrScanModal.hidden = false;
     html5QrScanner = new Html5Qrcode('qrReader');
+
+    const config = { fps: 10, qrbox: 220 };
+    const onSuccess = (decodedText) => {
+      const digits = (decodedText.match(/\d/g) || []).join('').slice(0, 6);
+      if (digits.length === 6) {
+        closeScanner();
+        $('joinCode').value = digits;
+        $('btnJoin').classList.add('is-valid');
+        joinRoom(digits);
+      }
+    };
+    const onScanFailure = () => { /* per-frame scan miss — expected constantly while aiming, ignore */ };
+
+    // Prefer the rear camera (typical on phones), but laptops/desktops often
+    // have no camera matching "environment" at all, which throws immediately.
+    // Fall back to whatever camera is available rather than failing outright.
     html5QrScanner
-      .start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: 220 },
-        (decodedText) => {
-          const digits = (decodedText.match(/\d/g) || []).join('').slice(0, 6);
-          if (digits.length === 6) {
-            closeScanner();
-            $('joinCode').value = digits;
-            $('btnJoin').classList.add('is-valid');
-            joinRoom(digits);
-          }
-        },
-        () => { /* per-frame scan miss — expected constantly while aiming, ignore */ }
-      )
+      .start({ facingMode: 'environment' }, config, onSuccess, onScanFailure)
+      .catch((err) => {
+        console.warn('environment-facing camera unavailable, trying default camera:', err);
+        return html5QrScanner.start(true, config, onSuccess, onScanFailure);
+      })
       .catch((err) => {
         console.error('Camera start failed:', err);
         toast('Could not access camera — check permissions, or enter the code manually.', true);
@@ -487,6 +494,12 @@
 
   btnScanQr.addEventListener('click', openScanner);
   btnCloseScan.addEventListener('click', closeScanner);
+  qrScanModal.addEventListener('click', (e) => {
+    if (e.target === qrScanModal) closeScanner(); // clicking the dimmed backdrop also closes it
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !qrScanModal.hidden) closeScanner();
+  });
   $('btnCancelWait').addEventListener('click', resetToIdle);
   $('btnDisconnect').addEventListener('click', resetToIdle);
 
